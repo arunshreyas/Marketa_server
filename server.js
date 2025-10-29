@@ -43,17 +43,16 @@ app.use((req, res) => {
     }
 })
 app.use(errorHandler)
-app.listen(port,()=>{
-     mongoose.connection.once('open',()=>{
-        console.log('MongoDB connected');
-        app.listen(port,()=>{
-            console.log(`Server is running on port ${port}`);
-        })
-     })
-     mongoose.connection.on('error',(err)=>{
-        console.log(err);
-        logEvents(`${err.no}: ${err.code}\t${err.syscall}\t${err.hostname}`, 'mongoErrLog.log');
-     })
-     console.log(`Server is running on port ${port}`);
-    
+
+// Start server after successful Mongo connection
+mongoose.connection.once('open', () => {
+    console.log('MongoDB connected');
+    app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+    })
+})
+
+mongoose.connection.on('error', (err) => {
+    console.log(err);
+    logEvents(`${err.no}: ${err.code}\t${err.syscall}\t${err.hostname}`, 'mongoErrLog.log');
 })
