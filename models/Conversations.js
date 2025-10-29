@@ -36,31 +36,23 @@ const conversationSchema = new mongoose.Schema({
     competitors: [String],
     unique_selling_points: [String]
   },
-  messages: [{
-    role: {
-      type: String,
-      enum: ['user', 'assistant', 'system'],
-      required: true
-    },
-    content: {
-      type: String,
-      required: true
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now
-    },
-    metadata: {
-      ai_model: String,
-      tokens_used: Number,
-      campaign_suggestions: [String]
-    }
-  }],
+  // Messages are now stored in the Message collection; keep denormalized summaries
+  last_message: {
+    role: { type: String, enum: ['user', 'assistant', 'system'] },
+    content: { type: String },
+    timestamp: { type: Date }
+  },
+  last_message_at: { type: Date },
+  message_count: { type: Number, default: 0 },
   ai_preferences: {
     marketing_style: String,
     tone: String,
     favorite_frameworks: [String]
   }
 }, { timestamps: true });
+
+// Helpful indexes
+conversationSchema.index({ user_id: 1, status: 1, updatedAt: -1 });
+conversationSchema.index({ campaign_id: 1, updatedAt: -1 });
 
 module.exports = mongoose.model('Conversation', conversationSchema);
