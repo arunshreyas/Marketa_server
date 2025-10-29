@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketa AI</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      height: 100vh;
+      width: 100vw;
+      background: radial-gradient(circle at top left, #0A0A0F, #151520, #1E1E2A);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-family: 'Poppins', sans-serif;
+      overflow: hidden;
+    }
+
+    .logo {
+      font-size: 3rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, #00FFA3, #00B8FF, #0072FF);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      animation: fadeIn 2s ease-in-out;
+    }
+
+    .tagline {
+      font-size: 1.1rem;
+      opacity: 0.75;
+      margin-bottom: 2rem;
+      letter-spacing: 1px;
+      animation: fadeIn 2s ease-in-out 0.5s backwards;
+    }
+
+    .loader {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top: 4px solid #00FFA3;
+      animation: spin 1.2s linear infinite;
+      box-shadow: 0 0 20px #00FFA3;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">Marketa AI</div>
+  <div class="tagline">Launching System...</div>
+  <div class="loader"></div>
+</body>
+</html>

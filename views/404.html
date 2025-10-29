@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 – Marketa AI</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      height: 100vh;
+      width: 100vw;
+      background: radial-gradient(circle at top left, #0A0A0F, #151520, #1E1E2A);
+      color: white;
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 6rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, #00FFA3, #00B8FF, #0072FF);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+      animation: fadeIn 1.5s ease-in-out;
+    }
+
+    p {
+      font-size: 1.2rem;
+      opacity: 0.75;
+      margin-bottom: 2rem;
+      animation: fadeIn 2s ease-in-out 0.5s backwards;
+    }
+
+    a {
+      text-decoration: none;
+      color: #00FFA3;
+      border: 1px solid #00FFA3;
+      padding: 0.7rem 1.5rem;
+      border-radius: 50px;
+      transition: all 0.3s ease;
+      font-weight: 500;
+      letter-spacing: 1px;
+      animation: fadeIn 2.2s ease-in-out 0.8s backwards;
+    }
+
+    a:hover {
+      background: linear-gradient(90deg, #00FFA3, #00B8FF, #0072FF);
+      color: #0A0A0F;
+      box-shadow: 0 0 15px #00FFA3;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .glow {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(0,255,163,0.15), transparent 70%);
+      filter: blur(60px);
+      z-index: -1;
+    }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <h1>404</h1>
+  <p>Oops! The page you’re looking for doesn’t exist.</p>
+  <a href="/">Return Home</a>
+</body>
+</html>
