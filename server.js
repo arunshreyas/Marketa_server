@@ -17,6 +17,8 @@ connectDB()
 app.use(logger)
 
 app.use(cors(corsOptions))
+// Explicitly handle preflight using regex to avoid wildcard path errors
+app.options(/.*/, cors(corsOptions))
 
 app.use(express.json())
 

@@ -2,7 +2,13 @@ const allowedOrigins = [
     // Frontend dev
     "http://localhost:3000",
     "http://localhost:5173",
-    // Backend itself (some tools send no origin or same-origin)
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    // Common hosted app domains (wildcards via RegExp)
+    /https?:\/\/.*\.vercel\.app$/,
+    /https?:\/\/.*\.netlify\.app$/,
+    /https?:\/\/.*\.onrender\.com$/,
+    // Backend itself
     "https://marketa-server.onrender.com",
 ]
 
