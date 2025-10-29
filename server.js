@@ -26,6 +26,9 @@ app.use(express.static(path.join(__dirname,"public")))
 
 app.use(require('./routes/root'))
 
+// Auth routes at root level: /signup and /login
+app.use('/', require('./routes/authRoutes'))
+
 app.use('/users',require('./routes/userRoutes'))
 app.use('/campaigns',require('./routes/campaignRoutes'))
 
