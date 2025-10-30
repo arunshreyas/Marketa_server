@@ -33,6 +33,38 @@ passport.serializeUser((user, done) => {
   done(null, user._id);
 });
 
+// ... existing code ...
+      // clientID: process.env.GOOGLE_CLIENT_ID,
+      // clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "https://marketa-server.onrender.com/auth/google/callback",
+// ... existing code ...
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "https://marketa-server.onrender.com/auth/google/callback",
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.emails[0].value;
+        let user = await User.findOne({ email });
+        if (!user) {
+          user = await User.create({
+            username: profile.displayName,
+            email,
+            password: accessToken, // Not used, but required by schema. You may want to refactor this.
+            name: profile.displayName,
+          });
+        }
+        return done(null, user);
+      } catch (err) {
+        return done(err, null);
+      }
+    }
+  )
+);
+
+passport.serializeUser((user, done) => {
+  done(null, user._id);
+});
+
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);
@@ -41,3 +73,4 @@ passport.deserializeUser(async (id, done) => {
     done(err, null);
   }
 });
+
