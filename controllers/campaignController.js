@@ -17,11 +17,8 @@ const getAllCampaigns = asyncHandler(async (req, res) => {
 const getCampaignsByUser = asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const campaigns = await Campaign.find({ user: userId });
-  if (!campaigns.length) {
-    res.status(404);
-    throw new Error('No campaigns found for this user');
-  }
-  res.json(campaigns);
+  // Return empty list instead of 404 to simplify client handling
+  res.json(Array.isArray(campaigns) ? campaigns : []);
 });
 
 
@@ -46,8 +43,9 @@ const createCampaign = asyncHandler(async (req, res) => {
     end_date,
     audience,
     content,
-    userId
   } = req.body;
+  // Accept user id from either userId (preferred) or user (backward compatibility)
+  const userId = req.body.userId || req.body.user;
 
   if (
     !campaign_name ||
