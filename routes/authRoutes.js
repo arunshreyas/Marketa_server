@@ -26,8 +26,9 @@ router.get(
       process.env.JWT_SECRET || 'fallback-secret',
       { expiresIn: '30d' }
     );
-    // send as JSON or redirect with ?token=...
-    res.json({ token, user });
+    // Redirect to frontend dashboard with token
+    const redirectUrl = `https://marketa-ten.vercel.app/dashboard?token=${encodeURIComponent(token)}`;
+    return res.redirect(redirectUrl);
   }
 );
 
