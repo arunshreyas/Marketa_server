@@ -7,9 +7,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: (process.env.NODE_ENV === "production")
-      ? "https://marketa-ten.vercel.app/google/callback"
-      : "http://localhost:3500/google/callback",
+      callbackURL:"marketa-server.onrender.com/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
