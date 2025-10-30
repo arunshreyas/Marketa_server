@@ -48,9 +48,8 @@ app.use('/', require('./routes/authRoutes'))
 app.use('/users',require('./routes/userRoutes'))
 app.use('/campaigns',require('./routes/campaignRoutes'))
 app.use('/brands', require('./routes/brandRoutes'));
-app.use('/auth/google', require('./routes/googleAuthRoutes'));
-app.use('/auth/google/callback', require('./routes/googleAuthCallbackRoutes'));
-app.use('/auth/google/failure', require('./routes/googleAuthFailureRoutes'));
+
+
 
 
 app.use((req, res) => {
