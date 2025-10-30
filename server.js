@@ -49,9 +49,6 @@ app.use('/users',require('./routes/userRoutes'))
 app.use('/campaigns',require('./routes/campaignRoutes'))
 app.use('/brands', require('./routes/brandRoutes'));
 
-
-
-
 app.use((req, res) => {
     res.status(404);
     if(req.accepts('html')){
