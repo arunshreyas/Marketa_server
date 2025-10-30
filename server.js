@@ -11,6 +11,9 @@ const connectDB = require('./config/dbConn');
 const mongoose = require('mongoose');
 const {logEvents} = require('./middleware/logger');
 const port = process.env.PORT || 3500;
+const passport = require('passport');
+require('./config/passport');
+const session = require('express-session');
 
 connectDB()
 
@@ -26,6 +29,17 @@ app.use(cookieParser())
 
 app.use(express.static(path.join(__dirname,"public")))
 
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'marketa-session',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false } // For development only
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.use(require('./routes/root'))
 
 // Auth routes at root level: /signup and /login
@@ -33,6 +47,7 @@ app.use('/', require('./routes/authRoutes'))
 
 app.use('/users',require('./routes/userRoutes'))
 app.use('/campaigns',require('./routes/campaignRoutes'))
+app.use('/brands', require('./routes/brandRoutes'));
 
 app.use((req, res) => {
     res.status(404);
