@@ -16,9 +16,24 @@ const getAllCampaigns = asyncHandler(async (req, res) => {
 
 
 const getCampaignsByUser = asyncHandler(async (req, res) => {
-  const { userId } = req.params;
-  const campaigns = await Campaign.find({ user: userId });
-  // Return empty list instead of 404 to simplify client handling
+  // Support either ObjectId or email via route param or query string
+  const param = req.params.userId;
+  const email = req.query.email || (param && param.includes('@') ? decodeURIComponent(param) : undefined);
+  let userObjectId = undefined;
+
+  if (email) {
+    const user = await User.findOne({ email }).select('_id');
+    if (user) userObjectId = user._id;
+  } else if (param && mongoose.Types.ObjectId.isValid(param)) {
+    userObjectId = param;
+  }
+
+  if (!userObjectId) {
+    // If identifier invalid or user not found, return empty list
+    return res.json([]);
+  }
+
+  const campaigns = await Campaign.find({ user: userObjectId });
   res.json(Array.isArray(campaigns) ? campaigns : []);
 });
 
