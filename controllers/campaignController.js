@@ -1,4 +1,5 @@
 const asyncHandler = require('express-async-handler');
+const mongoose = require('mongoose');
 const Campaign = require('../models/Campaigns');
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
@@ -114,21 +115,29 @@ const updateCampaign = asyncHandler(async (req, res) => {
 });
 
 // @desc    Delete campaign
-// @route   DELETE /api/campaigns/:id
+// @route   DELETE /campaigns/:id
 // @access  Public (secure later)
 const deleteCampaign = asyncHandler(async (req, res) => {
-  const campaign = await Campaign.findById(req.params.id);
+  const { id } = req.params;
+  
+  // Validate MongoDB ObjectId format
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400);
+    throw new Error('Invalid campaign ID format');
+  }
+
+  const campaign = await Campaign.findById(id);
   if (!campaign) {
     res.status(404);
     throw new Error('Campaign not found');
   }
 
-  await Campaign.findByIdAndDelete(req.params.id);
+  await Campaign.findByIdAndDelete(id);
 
   // Optionally remove reference from user
   await User.updateMany({}, { $pull: { campaigns: campaign._id } });
 
-  res.json({ message: 'Campaign deleted successfully' });
+  res.status(200).json({ message: 'Campaign deleted successfully' });
 });
 
 module.exports = {
