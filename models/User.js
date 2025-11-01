@@ -22,6 +22,10 @@ const userSchema = new mongoose.Schema({
     required: true
   },
   name: String,
+  profile_picture: {
+    type: String,
+    default: null // URL or path to the profile picture
+  },
   business_profile: {
     industry: String,
     target_audience: [String],
