@@ -18,6 +18,21 @@ const getAllUsers = asyncHandler(async(req,res)=>{
     res.json(users)
 })
 
+// Get current user (from JWT token)
+const getCurrentUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.userId).select('-password');
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+  res.json({ 
+    user: {
+      ...user.toObject(),
+      profile_picture: user.profile_picture
+    }
+  });
+});
+
 // Get user by ID
 const getUserById = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id).select('-password');
@@ -273,6 +288,7 @@ const deleteUser = asyncHandler(async(req,res)=>{
 
 module.exports = {
     getAllUsers,
+    getCurrentUser,
     getUserById,
     createUser,
     loginUser,

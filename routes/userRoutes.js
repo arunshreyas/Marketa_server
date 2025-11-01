@@ -25,6 +25,7 @@ router.post('/login', usersController.loginUser);       // POST /users/login
 
 // Protected routes
 router.get('/', verifyJWT, usersController.getAllUsers);           // GET /users
+router.get('/me', verifyJWT, usersController.getCurrentUser);     // GET /users/me (get current user from token)
 
 // Profile picture specific routes (must come before /:id routes)
 router.post('/:id/profile-picture', verifyJWT, uploadProfilePicture, handleMulterError, usersController.uploadProfilePicture);  // POST /users/:id/profile-picture (upload/update profile picture)
