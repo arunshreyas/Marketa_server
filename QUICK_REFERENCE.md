@@ -75,15 +75,6 @@ POST /messages
 ```
 Body: `{ "conversation": "conv_id", "sender": "user_id", "role": "user", "content": "..." }`
 
-### Send Message with AI Reply (n8n)
-```
-POST /messages/ai
-Authorization: Bearer JWT_TOKEN
-```
-Body: `{ "conversation": "conv_id", "campaignId": "camp_id", "content": "..." }`
-
-Returns both user message and AI reply. Requires JWT authentication.
-
 ### Get All Messages in Conversation
 ```
 GET /messages/conversation/:conversationId
@@ -100,20 +91,6 @@ GET /messages/:id
 
 1. **Get Campaign**: `GET /campaigns/:campaignId`
 2. **Create Conversation**: `POST /conversations` with `campaign_id`
-3. **Add Messages**: 
-   - **AI-Powered**: `POST /messages/ai` with JWT (recommended)
-   - **Manual**: `POST /messages` with `conversation` id
+3. **Add Messages**: `POST /messages` with `conversation` id
 4. **View Full Chat**: `GET /conversations/:id`
-
----
-
-## Environment Variables
-
-Required in `.env`:
-```
-DATABASE_URI=mongodb://...
-JWT_SECRET=your-secret-key
-N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/campaign-ai
-PORT=3500
-```
 

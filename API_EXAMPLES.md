@@ -67,9 +67,7 @@ Response:
 
 ### 3. Add Messages to the Conversation
 
-#### Option A: Manual Message Creation
-
-**User Message:**
+#### User Message:
 ```bash
 POST http://localhost:3500/messages
 Content-Type: application/json
@@ -83,7 +81,7 @@ Content-Type: application/json
 }
 ```
 
-**AI Assistant Response:**
+#### AI Assistant Response:
 ```bash
 POST http://localhost:3500/messages
 Content-Type: application/json
@@ -102,60 +100,6 @@ Content-Type: application/json
   }
 }
 ```
-
-#### Option B: AI-Powered Message with Automatic Reply (Recommended)
-
-**Send message with AI reply:**
-```bash
-POST http://localhost:3500/messages/ai
-Authorization: Bearer YOUR_JWT_TOKEN
-Content-Type: application/json
-
-{
-  "conversation": "CONVERSATION_MONGODB_ID",
-  "campaignId": "CAMPAIGN_MONGODB_ID",
-  "content": "What's the best social media platform for our target audience?",
-  "context": {
-    "business_type": "E-commerce",
-    "industry": "Fashion Retail"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "userMessage": {
-    "_id": "MSG_1_ID",
-    "message_id": "uuid-msg-1",
-    "role": "user",
-    "content": "What's the best social media platform for our target audience?",
-    "createdAt": "2024-06-01T10:00:00Z",
-    "updatedAt": "2024-06-01T10:00:00Z"
-  },
-  "aiMessage": {
-    "_id": "MSG_2_ID",
-    "message_id": "uuid-msg-2",
-    "role": "assistant",
-    "content": "Based on your target audience of professional women aged 18-30, Instagram and Pinterest would be ideal platforms...",
-    "createdAt": "2024-06-01T10:00:05Z",
-    "updatedAt": "2024-06-01T10:00:05Z",
-    "metadata": {
-      "ai_model": "n8n_workflow",
-      "timestamp": "2024-06-01T10:00:05.123Z"
-    }
-  }
-}
-```
-
-**Note:** The `/messages/ai` endpoint automatically:
-- Validates JWT authentication
-- Saves your user message
-- Calls the n8n AI workflow
-- Saves the AI response
-- Updates conversation metadata
-- Returns both messages in one response
 
 #### Another User Message:
 ```bash
@@ -281,7 +225,6 @@ Response now includes:
 | `/conversations/user/:userId` | GET | Get all user's conversations |
 | `/conversations/campaign/:campaignId` | GET | Get all conversations in a campaign |
 | `/messages` | POST | Add a message to a conversation |
-| `/messages/ai` | POST | Send user message and get AI reply via n8n (JWT required) |
 | `/messages/:id` | GET | Get a single message |
 | `/messages/:id` | PUT | Update a message |
 | `/messages/:id` | DELETE | Delete a message |
@@ -294,10 +237,7 @@ Response now includes:
 
 1. **Start Conversation**: Use POST `/conversations` with `campaign_id` when user clicks "Start Discussion" on a campaign
 2. **Load Messages**: Use GET `/conversations/:id` to load full conversation history
-3. **Send Message**: 
-   - For AI-powered replies: Use POST `/messages/ai` with JWT token (recommended)
-   - For manual message: Use POST `/messages` after user types and hits send
+3. **Send Message**: Use POST `/messages` after user types and hits send
 4. **Get Campaign Details**: Use GET `/campaigns/:id` to show campaign with conversation list
 5. **Show All Campaigns**: Use GET `/campaigns/user/:userId` to list all campaigns with their conversations
-6. **Environment Variables**: Ensure `N8N_WEBHOOK_URL` is set in your `.env` file for AI functionality
 
