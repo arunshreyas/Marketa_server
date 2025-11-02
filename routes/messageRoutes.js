@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
+  getAllMessages,
   getMessagesByConversation,
   getMessageById,
   createMessage,
@@ -14,6 +15,7 @@ router.route('/conversation/:conversationId')
 
 // General message routes
 router.route('/')
+  .get(getAllMessages)
   .post(createMessage);
 
 router.route('/:id')

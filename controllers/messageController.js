@@ -5,6 +5,19 @@ const Conversation = require('../models/Conversations');
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 
+// @desc    Get all messages
+// @route   GET /api/messages
+// @access  Public
+const getAllMessages = asyncHandler(async (req, res) => {
+  const messages = await Message.find()
+    .populate('sender', 'username email')
+    .populate('conversation', 'title conversation_id')
+    .sort({ createdAt: -1 })
+    .limit(100); // Limit to prevent huge responses
+  
+  res.json(messages);
+});
+
 // @desc    Get all messages for a conversation
 // @route   GET /api/messages/conversation/:conversationId
 // @access  Public
@@ -173,6 +186,7 @@ const deleteMessage = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  getAllMessages,
   getMessagesByConversation,
   getMessageById,
   createMessage,
