@@ -1,11 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const verifyJWT = require('../middleware/verifyJWT');
 const {
   getMessagesByConversation,
   getMessageById,
   createMessage,
   updateMessage,
-  deleteMessage
+  deleteMessage,
+  createMessageAndTriggerAI
 } = require('../controllers/messageController');
 
 // Get messages by conversation
@@ -15,6 +17,9 @@ router.route('/conversation/:conversationId')
 // General message routes
 router.route('/')
   .post(createMessage);
+
+// AI-powered message route (must come before /:id to avoid route conflicts)
+router.post('/ai', verifyJWT, createMessageAndTriggerAI);
 
 router.route('/:id')
   .get(getMessageById)
