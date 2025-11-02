@@ -48,7 +48,12 @@ const campaignSchema = new mongoose.Schema({
   content: {
     type: String,
     required: true
-  }
+  },
+  conversations: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Conversation'
+  }]
+  
 }, { timestamps: true });
 
 module.exports = mongoose.model('Campaign', campaignSchema);

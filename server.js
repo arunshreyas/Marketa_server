@@ -48,6 +48,8 @@ app.use('/', require('./routes/authRoutes'))
 app.use('/users',require('./routes/userRoutes'))
 app.use('/campaigns',require('./routes/campaignRoutes'))
 app.use('/brands', require('./routes/brandRoutes'));
+app.use('/conversations', require('./routes/conversationRoutes'));
+app.use('/messages', require('./routes/messageRoutes'));
 
 app.use((req, res) => {
     res.status(404);
