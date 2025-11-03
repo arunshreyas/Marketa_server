@@ -12,7 +12,6 @@ const messageSchema = new mongoose.Schema(
     conversation: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Conversation",
-      required: true,
       index: true,
     },
     sender: {
@@ -23,19 +22,13 @@ const messageSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: ["user", "assistant", "system"],
-      required: true,
     },
     content: {
       type: String,
       required: true,
       trim: true,
     },
-    metadata: {
-      ai_model: { type: String },
-      tokens_used: { type: Number },
-      campaign_suggestions: [{ type: String }],
-      // Extend with any message-level metadata you need
-    },
+   
   },
   { timestamps: true }
 );
