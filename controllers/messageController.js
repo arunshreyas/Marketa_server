@@ -71,21 +71,23 @@ const createMessage = asyncHandler(async (req, res) => {
     metadata
   } = req.body;
 
-  if (!conversationId || !role || !content) {
+  if (!role || !content) {
     res.status(400);
-    throw new Error('Conversation ID, role, and content are required');
+    throw new Error('Role and content are required');
   }
 
-  // Validate conversation exists
-  if (!mongoose.Types.ObjectId.isValid(conversationId)) {
-    res.status(400);
-    throw new Error('Invalid conversation ID format');
-  }
-  
-  const conversation = await Conversation.findById(conversationId);
-  if (!conversation) {
-    res.status(404);
-    throw new Error('Conversation not found');
+  // Validate conversation if provided (optional)
+  let conversation = null;
+  if (conversationId) {
+    if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+      res.status(400);
+      throw new Error('Invalid conversation ID format');
+    }
+    conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      res.status(404);
+      throw new Error('Conversation not found');
+    }
   }
 
   // Validate sender if provided (optional for assistant/system messages)
@@ -111,22 +113,24 @@ const createMessage = asyncHandler(async (req, res) => {
   // Create message
   const message = await Message.create({
     message_id: uuidv4(),
-    conversation: conversation._id,
+    conversation: conversation ? conversation._id : undefined,
     sender: senderId ? senderId : undefined,
     role,
     content,
     metadata: metadata || {}
   });
 
-  // Update conversation's last message info
-  conversation.last_message = {
-    role: message.role,
-    content: message.content,
-    timestamp: message.createdAt
-  };
-  conversation.last_message_at = message.createdAt;
-  conversation.message_count = (conversation.message_count || 0) + 1;
-  await conversation.save();
+  // Update conversation's last message info if conversation provided
+  if (conversation) {
+    conversation.last_message = {
+      role: message.role,
+      content: message.content,
+      timestamp: message.createdAt
+    };
+    conversation.last_message_at = message.createdAt;
+    conversation.message_count = (conversation.message_count || 0) + 1;
+    await conversation.save();
+  }
 
   res.status(201).json(message);
 });
