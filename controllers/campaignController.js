@@ -2,7 +2,6 @@ const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const Campaign = require('../models/Campaigns');
 const User = require('../models/User');
-const Conversation = require('../models/Conversations');
 const { v4: uuidv4 } = require('uuid');
 
 

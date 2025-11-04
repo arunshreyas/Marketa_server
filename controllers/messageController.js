@@ -1,8 +1,8 @@
 const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const Message = require('../models/Messages');
-const Conversation = require('../models/Conversations');
 const User = require('../models/User');
+const Campaign = require('../models/Campaigns');
 const { v4: uuidv4 } = require('uuid');
 
 // @desc    Get all messages
@@ -11,32 +11,32 @@ const { v4: uuidv4 } = require('uuid');
 const getAllMessages = asyncHandler(async (req, res) => {
   const messages = await Message.find()
     .populate('sender', 'username email')
-    .populate('conversation', 'title conversation_id')
+    .populate('campaign', 'campaign_name campaign_id')
     .sort({ createdAt: -1 })
     .limit(100); // Limit to prevent huge responses
   
   res.json(messages);
 });
 
-// @desc    Get all messages for a conversation
-// @route   GET /api/messages/conversation/:conversationId
+// @desc    Get all messages for a campaign
+// @route   GET /api/messages/campaign/:campaignId        
 // @access  Public
-const getMessagesByConversation = asyncHandler(async (req, res) => {
-  const { conversationId } = req.params;
+const getMessagesByCampaign = asyncHandler(async (req, res) => {
+  const { campaignId } = req.params;
   
-  if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+  if (!mongoose.Types.ObjectId.isValid(campaignId)) {
     res.status(400);
-    throw new Error('Invalid conversation ID format');
+    throw new Error('Invalid campaign ID format');
   }
 
-  // Verify conversation exists
-  const conversation = await Conversation.findById(conversationId);
-  if (!conversation) {
+  // Verify campaign exists
+  const campaign = await Campaign.findById(campaignId);
+  if (!campaign) {
     res.status(404);
-    throw new Error('Conversation not found');
+    throw new Error('Campaign not found');  
   }
 
-  const messages = await Message.find({ conversation: conversationId })
+  const messages = await Message.find({ campaign: campaignId })
     .populate('sender', 'username email')
     .sort({ createdAt: 1 });
   
@@ -63,8 +63,13 @@ const getMessageById = asyncHandler(async (req, res) => {
 // @route   POST /api/messages
 // @access  Public
 const createMessage = asyncHandler(async (req, res) => {
+  console.log('createMessage called');
+  console.log('Request body:', req.body);
+  console.log('Request headers:', req.headers);
+  
   const {
     conversation: conversationId,
+    campaign: campaignId,
     sender: senderId,
     role,
     content,
@@ -87,6 +92,20 @@ const createMessage = asyncHandler(async (req, res) => {
     if (!conversation) {
       res.status(404);
       throw new Error('Conversation not found');
+    }
+  }
+
+  // Validate campaign if provided (optional)
+  let campaign = null;
+  if (campaignId) {
+    if (!mongoose.Types.ObjectId.isValid(campaignId)) {
+      res.status(400);
+      throw new Error('Invalid campaign ID format');
+    }
+    campaign = await Campaign.findById(campaignId);
+    if (!campaign) {
+      res.status(404);
+      throw new Error('Campaign not found');
     }
   }
 
@@ -114,6 +133,7 @@ const createMessage = asyncHandler(async (req, res) => {
   const message = await Message.create({
     message_id: uuidv4(),
     conversation: conversation ? conversation._id : undefined,
+    campaign: campaign ? campaign._id : undefined,
     sender: senderId ? senderId : undefined,
     role,
     content,
@@ -132,6 +152,7 @@ const createMessage = asyncHandler(async (req, res) => {
     await conversation.save();
   }
 
+  console.log('Message created successfully:', message);
   res.status(201).json(message);
 });
 
@@ -191,7 +212,7 @@ const deleteMessage = asyncHandler(async (req, res) => {
 
 module.exports = {
   getAllMessages,
-  getMessagesByConversation,
+  getMessagesByCampaign,    
   getMessageById,
   createMessage,
   updateMessage,
