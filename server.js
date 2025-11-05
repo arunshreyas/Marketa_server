@@ -1,6 +1,7 @@
 require('dotenv').config()
 const express = require("express");
 const app = express();
+
 const path= require("path")
 const {logger}=require('./middleware/logger');
 const errorHandler = require('./middleware/errorHandler');
@@ -29,14 +30,24 @@ app.use(cookieParser())
 
 app.use(express.static(path.join(__dirname,"public")))
 
+// Trust proxy when behind load balancers (Render/Heroku) so secure cookies work
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'marketa-session',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false } // For development only
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax'
+    }
   })
 );
+
 app.use(passport.initialize());
 app.use(passport.session());
 
