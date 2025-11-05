@@ -2,16 +2,16 @@ const express = require('express');
 const router = express.Router();
 const {
   getAllMessages,
-  getMessagesByConversation,
+  getMessagesByCampaign,
   getMessageById,
   createMessage,
   updateMessage,
   deleteMessage
 } = require('../controllers/messageController');
 
-// Get messages by conversation
-router.route('/conversation/:conversationId')
-  .get(getMessagesByConversation);
+// Get messages by campaign
+router.route('/campaign/:campaignId')
+  .get(getMessagesByCampaign);
 
 // General message routes
 router.route('/')

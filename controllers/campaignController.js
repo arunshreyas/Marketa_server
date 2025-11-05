@@ -2,14 +2,12 @@ const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const Campaign = require('../models/Campaigns');
 const User = require('../models/User');
-const Conversation = require('../models/Conversations');
 const { v4: uuidv4 } = require('uuid');
 
 
 const getAllCampaigns = asyncHandler(async (req, res) => {
   const campaigns = await Campaign.find()
-    .populate('user', 'username email name')
-    .populate('conversations', 'title last_message status');
+    .populate('user', 'username email name');
   if (!campaigns.length) {
     res.status(404);
     throw new Error('No campaigns found');
@@ -37,15 +35,14 @@ const getCampaignsByUser = asyncHandler(async (req, res) => {
   }
 
   const campaigns = await Campaign.find({ user: userObjectId })
-    .populate('conversations', 'title last_message status');
+    ;
   res.json(Array.isArray(campaigns) ? campaigns : []);
 });
 
 
 const getCampaignById = asyncHandler(async (req, res) => {
   const campaign = await Campaign.findById(req.params.id)
-    .populate('user', 'username email name')
-    .populate('conversations', 'title last_message status last_message_at');
+    .populate('user', 'username email name');
   if (!campaign) {
     res.status(404);
     throw new Error('Campaign not found');
@@ -158,8 +155,7 @@ const deleteCampaign = asyncHandler(async (req, res) => {
   // Remove reference from user
   await User.updateMany({}, { $pull: { campaigns: campaign._id } });
   
-  // Delete associated conversations and their messages
-  await Conversation.deleteMany({ campaign_id: campaign._id });
+  
 
   res.status(200).json({ message: 'Campaign deleted successfully' });
 });

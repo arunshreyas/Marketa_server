@@ -9,10 +9,9 @@ const messageSchema = new mongoose.Schema(
       unique: true,
       required: true,
     },
-    conversation: {
+    campaign: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Conversation",
-
+      ref: "Campaign",
     },
     sender: {
       type: mongoose.Schema.Types.ObjectId,
@@ -33,8 +32,8 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Helpful compound index for fetching messages in a conversation by time
-messageSchema.index({ conversation: 1, createdAt: 1 });
+// Helpful compound index for fetching messages in a campaign by time
+messageSchema.index({ campaign: 1, createdAt: 1 });
 
 module.exports = mongoose.model("Message", messageSchema);
 
