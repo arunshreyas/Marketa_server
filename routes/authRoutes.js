@@ -26,6 +26,13 @@ router.get(
       process.env.JWT_SECRET || 'fallback-secret',
       { expiresIn: '30d' }
     );
+    // Also set an HTTP-only cookie for backend auth, in case frontend doesn't attach Authorization header
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
     // Redirect to frontend dashboard with token
     const frontendBase = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production'
       ? 'https://marketa-ten.vercel.app'
