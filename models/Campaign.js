@@ -49,10 +49,6 @@ const campaignSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  conversations: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Conversation'
-  }]
   
 }, { timestamps: true });
 

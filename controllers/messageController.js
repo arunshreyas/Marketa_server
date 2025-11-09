@@ -1,9 +1,12 @@
 const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const Message = require('../models/Messages');
+const axios = require("axios");
+
 const User = require('../models/User');
-const Campaign = require('../models/Campaigns');
+const Campaign = require('../models/Campaign');
 const { v4: uuidv4 } = require('uuid');
+const { sendEvent } = require('../utils/sse');
 
 // @desc    Get all messages
 // @route   GET /api/messages
@@ -11,15 +14,15 @@ const { v4: uuidv4 } = require('uuid');
 const getAllMessages = asyncHandler(async (req, res) => {
   const messages = await Message.find()
     .populate('sender', 'username email')
-    .populate('campaign', 'campaign_name campaign_id')
+    .populate('campaign', 'campaign_name campaign_id user')
     .sort({ createdAt: -1 })
     .limit(100); // Limit to prevent huge responses
   
   res.json(messages);
 });
 
-// @desc    Get all messages for a campaign
-// @route   GET /api/messages/campaign/:campaignId        
+// @desc    Get all messages for a conversation
+// @route   GET /api/messages/conversation/:conversationId
 // @access  Public
 const getMessagesByCampaign = asyncHandler(async (req, res) => {
   const { campaignId } = req.params;
@@ -33,7 +36,7 @@ const getMessagesByCampaign = asyncHandler(async (req, res) => {
   const campaign = await Campaign.findById(campaignId);
   if (!campaign) {
     res.status(404);
-    throw new Error('Campaign not found');  
+    throw new Error('Campaign not found');
   }
 
   const messages = await Message.find({ campaign: campaignId })
@@ -48,7 +51,7 @@ const getMessagesByCampaign = asyncHandler(async (req, res) => {
 // @access  Public
 const getMessageById = asyncHandler(async (req, res) => {
   const message = await Message.findById(req.params.id)
-    .populate('conversation', 'title conversation_id')
+    .populate('campaign', 'campaign_name campaign_id user')
     .populate('sender', 'username email');
   
   if (!message) {
@@ -63,36 +66,16 @@ const getMessageById = asyncHandler(async (req, res) => {
 // @route   POST /api/messages
 // @access  Public
 const createMessage = asyncHandler(async (req, res) => {
-  console.log('createMessage called');
-  console.log('Request body:', req.body);
-  console.log('Request headers:', req.headers);
-  
   const {
-    conversation: conversationId,
     campaign: campaignId,
     sender: senderId,
     role,
-    content,
-    metadata
+    content
   } = req.body;
 
   if (!role || !content) {
     res.status(400);
     throw new Error('Role and content are required');
-  }
-
-  // Validate conversation if provided (optional)
-  let conversation = null;
-  if (conversationId) {
-    if (!mongoose.Types.ObjectId.isValid(conversationId)) {
-      res.status(400);
-      throw new Error('Invalid conversation ID format');
-    }
-    conversation = await Conversation.findById(conversationId);
-    if (!conversation) {
-      res.status(404);
-      throw new Error('Conversation not found');
-    }
   }
 
   // Validate campaign if provided (optional)
@@ -111,49 +94,59 @@ const createMessage = asyncHandler(async (req, res) => {
 
   // Validate sender if provided (optional for assistant/system messages)
   if (senderId) {
-    if (!mongoose.Types.ObjectId.isValid(senderId)) {
-      res.status(400);
-      throw new Error('Invalid sender ID format');
-    }
-    const sender = await User.findById(senderId);
-    if (!sender) {
-      res.status(404);
-      throw new Error('Sender not found');
+    try {
+      if (mongoose.Types.ObjectId.isValid(senderId)) {
+        const sender = await User.findById(senderId);
+        if (!sender) {
+          // ignore bad sender; proceed without linking
+          req.body.sender = undefined;
+        }
+      } else {
+        // ignore invalid format; proceed without linking
+        req.body.sender = undefined;
+      }
+    } catch (_) {
+      req.body.sender = undefined;
     }
   }
 
-  // Validate role
-  const validRoles = ['user', 'assistant', 'system'];
-  if (!validRoles.includes(role)) {
-    res.status(400);
-    throw new Error('Invalid role. Must be one of: user, assistant, system');
-  }
-
-  // Create message
-  const message = await Message.create({
+  // Create user message
+  const userMessage = await Message.create({
     message_id: uuidv4(),
-    conversation: conversation ? conversation._id : undefined,
     campaign: campaign ? campaign._id : undefined,
-    sender: senderId ? senderId : undefined,
+    sender: (senderId && mongoose.Types.ObjectId.isValid(senderId)) ? senderId : undefined,
     role,
     content,
-    metadata: metadata || {}
   });
 
-  // Update conversation's last message info if conversation provided
-  if (conversation) {
-    conversation.last_message = {
-      role: message.role,
-      content: message.content,
-      timestamp: message.createdAt
-    };
-    conversation.last_message_at = message.createdAt;
-    conversation.message_count = (conversation.message_count || 0) + 1;
-    await conversation.save();
+  // Optional: trigger n8n webhook for AI reply
+  let aiMessage = null;
+  try {
+    if (process.env.N8N_WEBHOOK_URL) {
+      const n8nResponse = await axios.post(process.env.N8N_WEBHOOK_URL, {
+        campaignId: campaignId || null,
+        userId: senderId || null,
+        userMessage: content,
+        message_id: userMessage.message_id
+      });
+      const aiReplyText = n8nResponse?.data?.reply;
+      if (aiReplyText) {
+        aiMessage = await Message.create({
+          message_id: uuidv4(),
+          campaign: campaign ? campaign._id : undefined,
+          role: 'assistant',
+          content: aiReplyText,
+        });
+        if (campaign) {
+          try { sendEvent(campaign._id.toString(), 'message:new', aiMessage); } catch (_) {}
+        }
+      }
+    }
+  } catch (err) {
+    console.error('n8n webhook error:', err.message);
   }
 
-  console.log('Message created successfully:', message);
-  res.status(201).json(message);
+  res.status(201).json({ success: true, userMessage, aiMessage });
 });
 
 // @desc    Update a message
@@ -167,10 +160,9 @@ const updateMessage = asyncHandler(async (req, res) => {
     throw new Error('Message not found');
   }
 
-  const { content, metadata } = req.body;
+  const { content } = req.body;
   
   if (content !== undefined) message.content = content;
-  if (metadata !== undefined) message.metadata = metadata;
 
   await message.save();
   
@@ -200,22 +192,14 @@ const deleteMessage = asyncHandler(async (req, res) => {
 
   await Message.findByIdAndDelete(id);
   
-  // Update conversation's message count
-  const conversation = await Conversation.findById(message.conversation);
-  if (conversation && conversation.message_count > 0) {
-    conversation.message_count -= 1;
-    await conversation.save();
-  }
-  
   res.status(200).json({ message: 'Message deleted successfully' });
 });
 
 module.exports = {
   getAllMessages,
-  getMessagesByCampaign,    
+  getMessagesByCampaign,
   getMessageById,
   createMessage,
   updateMessage,
   deleteMessage
 };
-

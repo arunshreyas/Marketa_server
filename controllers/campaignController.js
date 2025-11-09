@@ -1,55 +1,38 @@
 const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
-const Campaign = require('../models/Campaigns');
+const Campaign = require('../models/Campaign');
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 
 
 const getAllCampaigns = asyncHandler(async (req, res) => {
-  const campaigns = await Campaign.find()
-    .populate('user', 'username email name')
-    .populate('conversations', 'title last_message status');
-  if (!campaigns.length) {
-    res.status(404);
-    throw new Error('No campaigns found');
-  }
-  res.json(campaigns);
+  // Only return campaigns owned by the authenticated user
+  const campaigns = await Campaign.find({ user: req.userId });
+  return res.json(Array.isArray(campaigns) ? campaigns : []);
 });
 
 
 const getCampaignsByUser = asyncHandler(async (req, res) => {
-  // Support either ObjectId or email via route param or query string
-  const param = req.params.userId;
-  const email = req.query.email || (param && param.includes('@') ? decodeURIComponent(param) : undefined);
-  let userObjectId = undefined;
-
-  if (email) {
-    const user = await User.findOne({ email }).select('_id');
-    if (user) userObjectId = user._id;
-  } else if (param && mongoose.Types.ObjectId.isValid(param)) {
-    userObjectId = param;
+  // Only allow fetching campaigns for the authenticated user
+  const requested = req.params.userId;
+  if (!requested || requested !== req.userId) {
+    return res.status(403).json({ message: 'Forbidden' });
   }
-
-  if (!userObjectId) {
-    // If identifier invalid or user not found, return empty list
-    return res.json([]);
-  }
-
-  const campaigns = await Campaign.find({ user: userObjectId })
-    .populate('conversations', 'title last_message status');
-  res.json(Array.isArray(campaigns) ? campaigns : []);
+  const campaigns = await Campaign.find({ user: req.userId });
+  return res.json(Array.isArray(campaigns) ? campaigns : []);
 });
 
 
 const getCampaignById = asyncHandler(async (req, res) => {
-  const campaign = await Campaign.findById(req.params.id)
-    .populate('user', 'username email name')
-    .populate('conversations', 'title last_message status last_message_at');
+  const campaign = await Campaign.findById(req.params.id);
   if (!campaign) {
     res.status(404);
     throw new Error('Campaign not found');
   }
-  res.json(campaign);
+  if (campaign.user.toString() !== req.userId) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+  return res.json(campaign);
 });
 
 
@@ -65,8 +48,6 @@ const createCampaign = asyncHandler(async (req, res) => {
     audience,
     content,
   } = req.body;
-  // Accept user id from either userId (preferred) or user (backward compatibility)
-  const userId = req.body.userId || req.body.user;
 
   if (
     !campaign_name ||
@@ -77,14 +58,13 @@ const createCampaign = asyncHandler(async (req, res) => {
     !start_date ||
     !end_date ||
     !audience ||
-    !content ||
-    !userId
+    !content
   ) {
     res.status(400);
     throw new Error('Please provide all required fields');
   }
 
-  const user = await User.findById(userId);
+  const user = await User.findById(req.userId);
   if (!user) {
     res.status(404);
     throw new Error('User not found');
@@ -120,6 +100,9 @@ const updateCampaign = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Campaign not found');
   }
+  if (campaign.user.toString() !== req.userId) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
 
   const updates = req.body;
   const updatedCampaign = await Campaign.findByIdAndUpdate(
@@ -151,14 +134,16 @@ const deleteCampaign = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Campaign not found');
   }
+  if (campaign.user.toString() !== req.userId) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
 
   await Campaign.findByIdAndDelete(id);
 
   // Remove reference from user
-  await User.updateMany({}, { $pull: { campaigns: campaign._id } });
+  await User.updateOne({ _id: campaign.user }, { $pull: { campaigns: campaign._id } });
   
-  // Delete associated conversations and their messages
-  await Conversation.deleteMany({ campaign_id: campaign._id });
+  
 
   res.status(200).json({ message: 'Campaign deleted successfully' });
 });

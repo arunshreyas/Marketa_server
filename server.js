@@ -49,6 +49,7 @@ app.use('/users',require('./routes/userRoutes'))
 app.use('/campaigns',require('./routes/campaignRoutes'))
 app.use('/brands', require('./routes/brandRoutes'));
 app.use('/messages', require('./routes/messageRoutes'));
+app.use('/responses', require('./routes/responseRoutes'));
 
 app.use((req, res) => {
     res.status(404);
