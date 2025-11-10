@@ -128,7 +128,12 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        const email = profile.emails[0].value;
+        const email = (profile && profile.email) ||
+                      (profile && Array.isArray(profile.emails) && profile.emails[0] && profile.emails[0].value) ||
+                      null;
+        if (!email) {
+          return done(new Error('Discord email not available'), null);
+        }
         let user = await User.findOne({ email });
         if (!user) {
           user = await User.create({
