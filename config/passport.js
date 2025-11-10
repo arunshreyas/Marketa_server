@@ -59,8 +59,13 @@ passport.use(
         const email = profile.emails[0].value;
         let user = await User.findOne({ email });
         if (!user) {
+          const base = (profile.username || profile.displayName || (email ? email.split('@')[0] : 'user'))
+            .toString()
+            .toLowerCase()
+            .replace(/[^a-z0-9_]/g, '_');
+          const safeUsername = `${base}_${Math.random().toString(36).slice(2,6)}`;
           user = await User.create({
-            username: profile.displayName,
+            username: safeUsername,
             email,
             password: accessToken,
             name: profile.displayName,
@@ -99,8 +104,13 @@ passport.use(
         }
         let user = await User.findOne({ email });
         if (!user) {
+          const base = (profile.username || profile.displayName || (email ? email.split('@')[0] : 'user'))
+            .toString()
+            .toLowerCase()
+            .replace(/[^a-z0-9_]/g, '_');
+          const safeUsername = `${base}_${Math.random().toString(36).slice(2,6)}`;
           user = await User.create({
-            username: profile.displayName,
+            username: safeUsername,
             email,
             password: accessToken,
             name: profile.displayName,
@@ -136,8 +146,13 @@ passport.use(
         }
         let user = await User.findOne({ email });
         if (!user) {
+          const base = (profile.username || profile.displayName || (email ? email.split('@')[0] : 'user'))
+            .toString()
+            .toLowerCase()
+            .replace(/[^a-z0-9_]/g, '_');
+          const safeUsername = `${base}_${Math.random().toString(36).slice(2,6)}`;
           user = await User.create({
-            username: profile.displayName,
+            username: safeUsername,
             email,
             password: accessToken,
             name: profile.displayName,
