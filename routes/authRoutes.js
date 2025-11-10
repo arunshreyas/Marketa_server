@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const usersController = require('../controllers/userController');
 const passport = require('passport');
+const crypto = require('node:crypto');
+const User = require('../models/User');
 
 // Auth endpoints at root paths
 router.post('/signup', usersController.createUser);   // POST /signup

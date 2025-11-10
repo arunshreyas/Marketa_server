@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const verifyJWT = require('../middleware/verifyJWT');
 const {
   getAllCampaigns,
   getCampaignsByUser,
@@ -9,7 +10,9 @@ const {
   deleteCampaign
 } = require('../controllers/campaignController');
 
-// Public for now — can add protect middleware later
+// Protect all campaign routes
+router.use(verifyJWT);
+
 router.route('/')
   .get(getAllCampaigns)
   .post(createCampaign);
