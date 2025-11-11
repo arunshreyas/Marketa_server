@@ -8,6 +8,7 @@ const {
   updateMessage,
   deleteMessage
 } = require('../controllers/messageController');
+const { addClient, removeClient } = require('../utils/sse');
 
 // Get messages by campaign
 router.route('/campaign/:campaignId')
@@ -28,6 +29,32 @@ router.route('/:id')
   .get(getMessageById)
   .put(updateMessage)
   .delete(deleteMessage);
+
+router.get('/stream/:campaignId', (req, res) => {
+  const { campaignId } = req.params;
+
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+  if (res.flushHeaders) res.flushHeaders();
+
+  res.write(': connected\n\n');
+
+  addClient(campaignId, res);
+
+  const heartbeat = setInterval(() => {
+    try { res.write('event: heartbeat\ndata: {}\n\n'); } catch (_) {}
+  }, 25000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    removeClient(campaignId, res);
+    try { res.end(); } catch (_) {}
+  });
+});
 
 module.exports = router;
 
