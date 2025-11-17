@@ -49,7 +49,19 @@ const campaignSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  
+  type: {
+    type: String,
+    required: false,
+  },
+  last_message: {
+    type: String,
+    required: false,
+  },
+  message_count: {
+    type: Number,
+    required: false,
+    default: 0,
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Campaign', campaignSchema);

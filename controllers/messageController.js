@@ -1,12 +1,13 @@
 const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const Message = require('../models/Messages');
-const axios = require("axios");
 
 const User = require('../models/User');
 const Campaign = require('../models/Campaign');
 const { v4: uuidv4 } = require('uuid');
 const { sendEvent } = require('../utils/sse');
+const agentSelector = require('../utils/agentSelector');
+const { generateAIResponse } = require('../services/aiService');
 
 // @desc    Get all messages
 // @route   GET /api/messages
@@ -21,8 +22,8 @@ const getAllMessages = asyncHandler(async (req, res) => {
   res.json(messages);
 });
 
-// @desc    Get all messages for a conversation
-// @route   GET /api/messages/conversation/:conversationId
+// @desc    Get all messages for a campaign
+// @route   GET /messages/campaign/:campaignId
 // @access  Public
 const getMessagesByCampaign = asyncHandler(async (req, res) => {
   const { campaignId } = req.params;
@@ -40,10 +41,17 @@ const getMessagesByCampaign = asyncHandler(async (req, res) => {
   }
 
   const messages = await Message.find({ campaign: campaignId })
-    .populate('sender', 'username email')
     .sort({ createdAt: 1 });
-  
-  res.json(messages);
+
+  const formatted = messages.map((m) => ({
+    _id: m._id,
+    content: m.content,
+    response: m.response,
+    role: m.role,
+    createdAt: m.createdAt,
+  }));
+
+  res.json(formatted);
 });
 
 // @desc    Get single message
@@ -62,91 +70,78 @@ const getMessageById = asyncHandler(async (req, res) => {
   res.json(message);
 });
 
-// @desc    Create a new message
-// @route   POST /api/messages
+// @desc    Create a new message and AI response in a single document
+// @route   POST /messages
 // @access  Public
 const createMessage = asyncHandler(async (req, res) => {
   const {
     campaign: campaignId,
     sender: senderId,
-    role,
-    content
+    content,
   } = req.body;
 
-  if (!role || !content) {
+  if (!campaignId || !content) {
     res.status(400);
-    throw new Error('Role and content are required');
+    throw new Error('campaign and content are required');
   }
 
-  // Validate campaign if provided (optional)
-  let campaign = null;
-  if (campaignId) {
-    if (!mongoose.Types.ObjectId.isValid(campaignId)) {
-      res.status(400);
-      throw new Error('Invalid campaign ID format');
-    }
-    campaign = await Campaign.findById(campaignId);
-    if (!campaign) {
-      res.status(404);
-      throw new Error('Campaign not found');
-    }
+  if (!mongoose.Types.ObjectId.isValid(campaignId)) {
+    res.status(400);
+    throw new Error('Invalid campaign ID format');
   }
 
-  // Validate sender if provided (optional for assistant/system messages)
-  if (senderId) {
-    try {
-      if (mongoose.Types.ObjectId.isValid(senderId)) {
-        const sender = await User.findById(senderId);
-        if (!sender) {
-          // ignore bad sender; proceed without linking
-          req.body.sender = undefined;
-        }
-      } else {
-        // ignore invalid format; proceed without linking
-        req.body.sender = undefined;
-      }
-    } catch (_) {
-      req.body.sender = undefined;
+  const campaign = await Campaign.findById(campaignId);
+  if (!campaign) {
+    res.status(404);
+    throw new Error('Campaign not found');
+  }
+
+  let sender = undefined;
+  if (senderId && mongoose.Types.ObjectId.isValid(senderId)) {
+    const senderDoc = await User.findById(senderId);
+    if (senderDoc) {
+      sender = senderId;
     }
   }
 
-  // Create user message
-  const userMessage = await Message.create({
+  // Create initial user message
+  const message = await Message.create({
     message_id: uuidv4(),
-    campaign: campaign ? campaign._id : undefined,
-    sender: (senderId && mongoose.Types.ObjectId.isValid(senderId)) ? senderId : undefined,
-    role,
+    campaign: campaign._id,
+    sender,
+    role: 'user',
     content,
   });
 
-  // Optional: trigger n8n webhook for AI reply
-  let aiMessage = null;
+  // AI agent logic
   try {
-    if (process.env.N8N_WEBHOOK_URL) {
-      const n8nResponse = await axios.post(process.env.N8N_WEBHOOK_URL, {
-        campaignId: campaignId || null,
-        userId: senderId || null,
-        userMessage: content,
-        message_id: userMessage.message_id
-      });
-      const aiReplyText = n8nResponse?.data?.reply;
-      if (aiReplyText) {
-        aiMessage = await Message.create({
-          message_id: uuidv4(),
-          campaign: campaign ? campaign._id : undefined,
-          role: 'assistant',
-          content: aiReplyText,
-        });
-        if (campaign) {
-          try { sendEvent(campaign._id.toString(), 'message:new', aiMessage); } catch (_) {}
-        }
-      }
-    }
+    const agent = agentSelector(campaign.type);
+    const campaignContext = campaign.goals || campaign.content || '';
+
+    const aiReply = await generateAIResponse({
+      agent,
+      content,
+      campaignContext,
+    });
+
+    // Use AI reply if present, otherwise a generic fallback
+    message.response = aiReply || 'The AI did not return any text.';
+    await message.save();
+
+    // Update campaign aggregates
+    campaign.last_message = content;
+    campaign.message_count = (campaign.message_count || 0) + 1;
+    await campaign.save();
+
+    try { sendEvent(campaign._id.toString(), 'message:new', message); } catch (_) {}
   } catch (err) {
-    console.error('n8n webhook error:', err.message);
+    console.error('AI generation error:', err.message);
+    // Guarantee a response even if the AI call fails
+    message.response = 'The AI service is temporarily unavailable. Please try again later.';
+    await message.save();
   }
 
-  res.status(201).json({ success: true, userMessage, aiMessage });
+  res.status(201).json(message);
 });
 
 // @desc    Update a message

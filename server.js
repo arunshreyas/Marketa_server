@@ -50,7 +50,7 @@ app.use('/campaigns',require('./routes/campaignRoutes'))
 app.use('/brands', require('./routes/brandRoutes'));
 app.use('/messages', require('./routes/messageRoutes'));
 app.use('/responses', require('./routes/responseRoutes'));
-
+app.use('/conversations', require('./routes/conversationRoutes'));
 app.use((req, res) => {
     res.status(404);
     if(req.accepts('html')){

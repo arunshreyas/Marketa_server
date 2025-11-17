@@ -21,13 +21,18 @@ const messageSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: ["user", "assistant", "system"],
+      default: "user",
     },
     content: {
       type: String,
       required: true,
       trim: true,
     },
-   
+    response: {
+      type: String,
+      required: false,
+      trim: true,
+    },
   },
   { timestamps: true }
 );
