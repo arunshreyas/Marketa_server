@@ -33,14 +33,24 @@ const generateAIResponse = async ({ agent, content, campaignContext }) => {
   }
   messages.push({ role: 'user', content });
 
-  const response = await openai.chat.completions.create({
-    model: process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat-v3.1:free',
-    messages,
-    temperature: 0.7,
-  });
+  try {
+    const response = await openai.chat.completions.create({
+      model: process.env.OPENROUTER_MODEL || 'openrouter/auto',
+      messages,
+      temperature: 0.7,
+    });
 
-  const text = response.choices?.[0]?.message?.content || '';
-  return text.trim();
+    const text = response.choices?.[0]?.message?.content || '';
+    return text.trim();
+  } catch (err) {
+    // Log richer error information to help diagnose provider issues
+    console.error('OpenRouter AI error:', {
+      status: err.status,
+      message: err.message,
+      data: err.response?.data,
+    });
+    throw err;
+  }
 };
 
 module.exports = { generateAIResponse };
