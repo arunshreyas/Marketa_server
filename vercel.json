@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "server.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": "4000",
+    "DATABASE_URI": "",
+    "SESSION_SECRET": "",
+    "JWT_SECRET": "",
+    "FRONTEND_URL": "",
+    "ALLOW_ALL_ORIGINS": "false",
+    "OPENROUTER_API_KEY": "",
+    "OPENROUTER_MODEL": "deepseek/deepseek-chat-v3.1:free",
+    "GOOGLE_CLIENT_ID": "",
+    "GOOGLE_CLIENT_SECRET": "",
+    "GOOGLE_CALLBACK_URL": "",
+    "GITHUB_CLIENT_ID": "",
+    "GITHUB_CLIENT_SECRET": "",
+    "GITHUB_CALLBACK_URL": "",
+    "DISCORD_CLIENT_ID": "",
+    "DISCORD_CLIENT_SECRET": "",
+    "DISCORD_CALLBACK_URL": ""
+  }
+}
