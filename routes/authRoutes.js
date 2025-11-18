@@ -5,6 +5,14 @@ const passport = require('passport');
 const crypto = require('node:crypto');
 const User = require('../models/User');
 
+// Helper to determine frontend base URL
+const getFrontendBase = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://marketa-ten.vercel.app';
+  }
+  return process.env.FRONTEND_URL || 'http://localhost:5173';
+};
+
 // Auth endpoints at root paths
 router.post('/signup', usersController.createUser);   // POST /signup
 router.post('/login', usersController.loginUser);     // POST /login
@@ -29,7 +37,8 @@ router.get(
       { expiresIn: '30d' }
     );
     // Redirect to frontend dashboard with token
-    const redirectUrl = `https://marketa-ten.vercel.app/dashboard?token=${encodeURIComponent(token)}`;
+    const frontendBase = getFrontendBase();
+    const redirectUrl = `${frontendBase}/dashboard?token=${encodeURIComponent(token)}`;
     return res.redirect(redirectUrl);
   }
 );
@@ -68,9 +77,7 @@ router.get(
       path: '/auth/refresh',
       maxAge: 30 * 24 * 60 * 60 * 1000
     });
-    const frontendBase = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production'
-      ? 'https://marketa-ten.vercel.app'
-      : 'http://localhost:5173');
+    const frontendBase = getFrontendBase();
     const redirectUrl = `${frontendBase}/dashboard?token=${encodeURIComponent(token)}`;
     return res.redirect(redirectUrl);
   }
@@ -110,9 +117,7 @@ router.get(
       path: '/auth/refresh',
       maxAge: 30 * 24 * 60 * 60 * 1000
     });
-    const frontendBase = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production'
-      ? 'https://marketa-ten.vercel.app'
-      : 'http://localhost:5173');
+    const frontendBase = getFrontendBase();
     const redirectUrl = `${frontendBase}/dashboard?token=${encodeURIComponent(token)}`;
     return res.redirect(redirectUrl);
   }
