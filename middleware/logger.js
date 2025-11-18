@@ -8,11 +8,12 @@ const path = require('path');
 const logEvents = async(message, logFileName) => {
     const dateTime = format(new Date(),'yyyyMMdd\tHH:mm:ss');
     const logItem = `${dateTime}\t${uuid()}\t${message}\n`;
+    const logDir = process.env.LOG_DIR || path.join('/tmp', 'logs');
     try{
-        if(!fs.existsSync(path.join(__dirname,'..','logs'))){
-            await fsPromises.mkdir(path.join(__dirname,'..','logs'));
+        if(!fs.existsSync(logDir)){
+            await fsPromises.mkdir(logDir, { recursive: true });
         }
-        await fsPromises.appendFile(path.join(__dirname,'..','logs',logFileName),logItem);
+        await fsPromises.appendFile(path.join(logDir,logFileName),logItem);
     }catch(err){
         console.log(err);
     }
