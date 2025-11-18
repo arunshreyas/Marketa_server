@@ -2,8 +2,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../public/uploads/profile-pictures');
+// Ensure uploads directory exists (use configurable env var with safe default)
+const uploadsDir = process.env.UPLOAD_DIR || path.join('/tmp', 'profile-pictures');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
