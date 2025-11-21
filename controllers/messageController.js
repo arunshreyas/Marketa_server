@@ -113,10 +113,16 @@ const createMessage = asyncHandler(async (req, res) => {
     content,
   });
 
-  // AI agent logic
+  // First, try to get an AI response
   try {
     const agent = agentSelector(campaign.type);
     const campaignContext = campaign.goals || campaign.content || '';
+
+    console.log('createMessage AI call:', {
+      campaignId: campaign._id.toString(),
+      agent,
+      hasCampaignContext: !!campaignContext,
+    });
 
     const aiReply = await generateAIResponse({
       agent,
@@ -126,20 +132,26 @@ const createMessage = asyncHandler(async (req, res) => {
 
     // Use AI reply if present, otherwise a generic fallback
     message.response = aiReply || 'The AI did not return any text.';
-    await message.save();
-
-    // Update campaign aggregates
-    campaign.last_message = content;
-    campaign.message_count = (campaign.message_count || 0) + 1;
-    await campaign.save();
-
-    try { sendEvent(campaign._id.toString(), 'message:new', message); } catch (_) {}
   } catch (err) {
     console.error('AI generation error:', err.message);
     // Guarantee a response even if the AI call fails
     message.response = 'The AI service is temporarily unavailable. Please try again later.';
-    await message.save();
   }
+
+  // Persist the message with whatever response we have
+  await message.save();
+
+  // Update campaign aggregates, but do not let validation errors here
+  // overwrite a successful AI response
+  try {
+    campaign.last_message = content;
+    campaign.message_count = (campaign.message_count || 0) + 1;
+    await campaign.save();
+  } catch (err) {
+    console.error('Campaign aggregate update error:', err.message);
+  }
+
+  try { sendEvent(campaign._id.toString(), 'message:new', message); } catch (_) {}
 
   res.status(201).json(message);
 });

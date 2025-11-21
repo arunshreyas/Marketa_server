@@ -1,16 +1,27 @@
 const agentSelector = (campaignType) => {
-  switch ((campaignType || '').toLowerCase()) {
+  const normalized = (campaignType || '').toLowerCase();
+
+  let agent;
+  switch (normalized) {
     case 'funnel':
-      return 'funnel';
+      agent = 'funnel';
+      break;
     case 'ads':
-      return 'ads';
+      agent = 'ads';
+      break;
     case 'research':
-      return 'research';
+      agent = 'research';
+      break;
     case 'content':
-      return 'content';
+      agent = 'content';
+      break;
     default:
-      return 'content';
+      agent = 'content';
+      break;
   }
+
+  console.log('Selected agent:', { campaignType: campaignType || null, agent });
+  return agent;
 };
 
 module.exports = agentSelector;

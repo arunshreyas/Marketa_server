@@ -19,7 +19,13 @@ const loadSystemPrompt = (agent) => {
 };
 
 const generateAIResponse = async ({ agent, content, campaignContext }) => {
-  const systemPrompt = loadSystemPrompt(agent);
+  const baseSystemPrompt = loadSystemPrompt(agent);
+  const safetyLayer =
+    'IMPORTANT: Never invent promotions, discounts, sales, seasonal events, or generic marketing offers unless the user explicitly requests it.';
+
+  const systemPrompt = baseSystemPrompt
+    ? `${baseSystemPrompt}\n\n${safetyLayer}`
+    : safetyLayer;
 
   const messages = [];
   if (systemPrompt) {
@@ -34,14 +40,31 @@ const generateAIResponse = async ({ agent, content, campaignContext }) => {
   messages.push({ role: 'user', content });
 
   try {
+    const model = process.env.OPENROUTER_MODEL || 'openrouter/auto';
+    console.log('generateAIResponse payload:', { model, messages });
+
     const response = await openai.chat.completions.create({
-      model: process.env.OPENROUTER_MODEL || 'openrouter/auto',
+      model,
       messages,
-      temperature: 0.7,
+      temperature: 0.2,
     });
 
-    const text = response.choices?.[0]?.message?.content || '';
-    return text.trim();
+    const text = (response.choices?.[0]?.message?.content || '').trim();
+
+    // Defensive fallback: if the reply looks like a generic promotion but
+    // the user did not mention any sale-related concept, return a neutral message.
+    const lowerReply = text.toLowerCase();
+    const lowerUser = (content || '').toLowerCase();
+    const promoKeywords = ['sale', 'discount', 'seasonal offer', 'limited time offer', 'black friday', 'cyber monday'];
+
+    const userRequestedPromo = promoKeywords.some((kw) => lowerUser.includes(kw));
+    const looksLikePromo = promoKeywords.some((kw) => lowerReply.includes(kw));
+
+    if (looksLikePromo && !userRequestedPromo) {
+      return 'Your message was misinterpreted. Please clarify what you need.';
+    }
+
+    return text;
   } catch (err) {
     // Log richer error information to help diagnose provider issues
     console.error('OpenRouter AI error:', {
