@@ -1,75 +1,49 @@
-const path = require('path');
-const fs = require('fs');
-const OpenAI = require('openai');
+const axios = require('axios');
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: 'https://openrouter.ai/api/v1',
-});
+const PY_AI_SERVICE_URL = process.env.PY_AI_SERVICE_URL || 'http://127.0.0.1:8000';
 
-// Load system prompt from /agents/<agent>.txt
-const loadSystemPrompt = (agent) => {
-  const filePath = path.join(__dirname, '..', 'agents', `${agent}.txt`);
-  try {
-    return fs.readFileSync(filePath, 'utf8');
-  } catch (err) {
-    console.error('Error loading system prompt for agent', agent, err.message);
-    return '';
-  }
-};
-
+// This function is used by messageController.js.
+// It now calls the Python FastAPI service instead of OpenRouter directly.
 const generateAIResponse = async ({ agent, content, campaignContext }) => {
-  const baseSystemPrompt = loadSystemPrompt(agent);
-  const safetyLayer =
-    'IMPORTANT: Never invent promotions, discounts, sales, seasonal events, or generic marketing offers unless the user explicitly requests it.';
-
-  const systemPrompt = baseSystemPrompt
-    ? `${baseSystemPrompt}\n\n${safetyLayer}`
-    : safetyLayer;
-
   const messages = [];
-  if (systemPrompt) {
-    messages.push({ role: 'system', content: systemPrompt });
-  }
+
   if (campaignContext) {
     messages.push({
       role: 'system',
       content: `Campaign context: ${campaignContext}`,
     });
   }
-  messages.push({ role: 'user', content });
+
+  messages.push({
+    role: 'user',
+    content,
+  });
+
+  const payload = {
+    agent,
+    messages,
+  };
 
   try {
-    const model = process.env.OPENROUTER_MODEL || 'openrouter/auto';
-    console.log('generateAIResponse payload:', { model, messages });
-
-    const response = await openai.chat.completions.create({
-      model,
-      messages,
-      temperature: 0.2,
+    const url = `${PY_AI_SERVICE_URL}/generate`;
+    console.log('Calling Python AI service:', {
+      url,
+      payloadSummary: {
+        agent,
+        messagesCount: messages.length,
+      },
     });
 
-    const text = (response.choices?.[0]?.message?.content || '').trim();
+    const response = await axios.post(url, payload, { timeout: 60000 });
 
-    // Defensive fallback: if the reply looks like a generic promotion but
-    // the user did not mention any sale-related concept, return a neutral message.
-    const lowerReply = text.toLowerCase();
-    const lowerUser = (content || '').toLowerCase();
-    const promoKeywords = ['sale', 'discount', 'seasonal offer', 'limited time offer', 'black friday', 'cyber monday'];
+    const reply = response?.data?.reply || '';
+    const text = (reply || '').trim();
 
-    const userRequestedPromo = promoKeywords.some((kw) => lowerUser.includes(kw));
-    const looksLikePromo = promoKeywords.some((kw) => lowerReply.includes(kw));
-
-    if (looksLikePromo && !userRequestedPromo) {
-      return 'Your message was misinterpreted. Please clarify what you need.';
-    }
-
-    return text;
+    return text || 'The AI did not return any text.';
   } catch (err) {
-    // Log richer error information to help diagnose provider issues
-    console.error('OpenRouter AI error:', {
-      status: err.status,
+    console.error('Python AI service error:', {
       message: err.message,
+      status: err.response?.status,
       data: err.response?.data,
     });
     throw err;
