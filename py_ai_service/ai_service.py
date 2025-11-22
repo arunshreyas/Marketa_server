@@ -149,6 +149,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def root() -> dict:
+    return {"service": "Marketa Python AI Service", "status": "ok"}
+
+@app.get("/favicon.ico", status_code=204)
+def favicon() -> None:  # type: ignore[return-value]
+    return None
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}

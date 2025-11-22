@@ -17,7 +17,8 @@ COPY . .
 
 # Environment
 ENV NODE_ENV=production \
-    PORT=4000
+    PORT=4000 \
+    PY_AI_SERVICE_URL=http://py_ai_service:8000
 
 # Use non-root user for security
 USER node

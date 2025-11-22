@@ -6,8 +6,20 @@ services:
       - "4000:4000"
     env_file:
       - .env
+    environment:
+      PY_AI_SERVICE_URL: "http://py_ai_service:8000"
     depends_on:
       - mongo
+      - py_ai_service
+  py_ai_service:
+    build:
+      context: .
+      dockerfile: ./py_ai_service/Dockerfile
+    container_name: marketa-py-ai
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./py_ai_service/.env
   mongo:
     image: mongo:7
     container_name: marketa-mongo
