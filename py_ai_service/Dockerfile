@@ -20,4 +20,5 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "ai_service:app", "--host", "0.0.0.0", "--port", "8000"]
+# ai_service.py lives inside the py_ai_service package when copied under /app
+CMD ["uvicorn", "py_ai_service.ai_service:app", "--host", "0.0.0.0", "--port", "8000"]
